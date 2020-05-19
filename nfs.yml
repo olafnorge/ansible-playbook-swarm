@@ -1,0 +1,58 @@
+---
+- import_playbook: setup-requirements.yml
+
+- name: setup nfs servers
+  hosts: virt-host
+  handlers:
+    - name: restart nfs server
+      service:
+        enabled: yes
+        name: nfs-kernel-server
+        state: restarted
+      listen: "restart nfs server"
+      when:
+        - (nfs_folders_created is changed) or (nfs_exports_created is changed)
+  tasks:
+    - name: install nfs server
+      apt:
+        install_recommends: no
+        name: nfs-kernel-server
+        state: present
+        update_cache: yes
+    - name: ensure folders to export are available
+      file:
+        group: "{{ item.group }}"
+        mode: "{{ item.mode }}"
+        owner: "{{ item.owner }}"
+        path: "{{ item.path }}"
+        recurse: no
+        state: directory
+      register: nfs_folders_created
+      notify: "restart nfs server"
+      with_items: "{{ nfs_shares }}"
+    - name: write exports
+      template:
+        backup: yes
+        dest: /etc/exports
+        src: exports.j2
+      notify: "restart nfs server"
+      register: nfs_exports_created
+    - name: log changed folders
+      copy:
+        content: "{{ nfs_folders_created | to_json }}"
+        dest: "{{ playbook_dir }}/nfs_folders_created.json"
+      delegate_to: localhost
+      run_once: yes
+      changed_when: False
+      when:
+        - nfs_folders_created is changed
+
+- name: setup nfs clients
+  hosts: managers,workers
+  tasks:
+    - name: install nfs client
+      apt:
+        install_recommends: no
+        name: nfs-common
+        state: present
+        update_cache: yes

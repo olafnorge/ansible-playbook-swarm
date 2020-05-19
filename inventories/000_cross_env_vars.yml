@@ -1,0 +1,382 @@
+---
+certbot_mode: staging
+certbot_share: /mnt/share/certbot
+ext_proxy_bind_http: 8080
+ext_proxy_bind_https: 8443
+ext_proxy_bind_imap: 10143
+ext_proxy_bind_imaps: 10993
+ext_proxy_bind_sieve: 14190
+ext_proxy_bind_smtp: 10025
+ext_proxy_bind_smtps: 10465
+ext_proxy_bind_submission: 10587
+int_proxy_bind_api: 8282
+int_proxy_bind_http: 80
+int_proxy_bind_https: 443
+int_proxy_bind_netbios: 139
+int_proxy_bind_cifs: 445
+int_proxy_bind_sshd: 22
+manager01:
+  host: 192.168.254.100
+  port: 1022
+  user: vagrant
+  become: yes
+  private_key_file: '~/.vagrant.d/insecure_private_key'
+  ssh_args: ''
+manager02:
+  host: 192.168.254.101
+  port: 1022
+  user: vagrant
+  become: yes
+  private_key_file: '~/.vagrant.d/insecure_private_key'
+  ssh_args: ''
+manager03:
+  host: 192.168.254.102
+  port: 1022
+  user: vagrant
+  become: yes
+  private_key_file: '~/.vagrant.d/insecure_private_key'
+  ssh_args: ''
+manager_primary:
+  host: "{{ manager01.host }}"
+  port: "{{ manager01.port | default(22) }}"
+  user: "{{ manager01.user | default('root') }}"
+  become: "{{ manager01.become | default(no) }}"
+  private_key_file: "{{ manager01.private_key_file | default('~/.ssh/id_rsa') }}"
+  ssh_args: "{{ manager01.ssh_args }}"
+nfs_master: "{{ virt_host.host }}/24"
+virt_host:
+  host: 192.168.254.99
+  internal_host: 10.0.2.15 # FIXME: in order to use this in haproxy you need to do a port forwarding via a ssh tunnel
+  port: 1022
+  user: vagrant
+  become: yes
+  private_key_file: '~/.vagrant.d/insecure_private_key'
+  ssh_args: ''
+worker01:
+  host: 192.168.254.103
+  port: 1022
+  user: vagrant
+  become: yes
+  private_key_file: '~/.vagrant.d/insecure_private_key'
+  ssh_args: ''
+worker02:
+  host: 192.168.254.104
+  port: 1022
+  user: vagrant
+  become: yes
+  private_key_file: '~/.vagrant.d/insecure_private_key'
+  ssh_args: ''
+worker03:
+  host: 192.168.254.105
+  port: 1022
+  user: vagrant
+  become: yes
+  private_key_file: '~/.vagrant.d/insecure_private_key'
+  ssh_args: ''
+
+# nfs shares
+nfs_shares:
+  - path: /mnt/share/certbot/etc
+    mode: '0755'
+    owner: root
+    group: root
+    dest: /mnt/nfs/certbot/etc
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/certbot/var
+    mode: '0755'
+    owner: root
+    group: root
+    dest: /mnt/nfs/certbot/var
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/oauth/database
+    mode: '0755'
+    owner: 999
+    group: 999
+    dest: /mnt/nfs/oauth/database
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/oauth/redis
+    mode: '0755'
+    owner: 999
+    group: 1000
+    dest: /mnt/nfs/oauth/redis
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/satis/repositories
+    mode: '0755'
+    owner: 33
+    group: 33
+    dest: /mnt/nfs/satis/repositories
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/satis/cache
+    mode: '0755'
+    owner: 33
+    group: 33
+    dest: /mnt/nfs/satis/cache
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/satis/database
+    mode: '0755'
+    owner: 999
+    group: 999
+    dest: /mnt/nfs/satis/database
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/satis/redis
+    mode: '0755'
+    owner: 999
+    group: 1000
+    dest: /mnt/nfs/satis/redis
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/dyndns/database
+    mode: '0755'
+    owner: 999
+    group: 999
+    dest: /mnt/nfs/dyndns/database
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/dyndns/redis
+    mode: '0755'
+    owner: 999
+    group: 1000
+    dest: /mnt/nfs/dyndns/redis
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/dns/database
+    mode: '0755'
+    owner: 999
+    group: 999
+    dest: /mnt/nfs/dns/database
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/dns/redis
+    mode: '0755'
+    owner: 999
+    group: 1000
+    dest: /mnt/nfs/dns/redis
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/gitlab/etc
+    mode: '0775'
+    owner: root
+    group: root
+    dest: /mnt/nfs/gitlab/etc
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/gitlab/log
+    mode: '0755'
+    owner: root
+    group: root
+    dest: /mnt/nfs/gitlab/log
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/gitlab/opt
+    mode: '0755'
+    owner: root
+    group: root
+    dest: /mnt/nfs/gitlab/opt
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/gitlab/runner/ansible/home
+    mode: '0755'
+    owner: 100
+    group: 65533
+    dest: /mnt/nfs/gitlab/runner/ansible/home
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/gitlab/runner/build/home
+    mode: '0755'
+    owner: 100
+    group: 65533
+    dest: /mnt/nfs/gitlab/runner/build/home
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/gitlab/runner/catchall/home
+    mode: '0755'
+    owner: 100
+    group: 65533
+    dest: /mnt/nfs/gitlab/runner/catchall/home
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/gitlab/runner/clair/home
+    mode: '0755'
+    owner: 100
+    group: 65533
+    dest: /mnt/nfs/gitlab/runner/clair/home
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/gitlab/runner/docker/home
+    mode: '0755'
+    owner: 100
+    group: 65533
+    dest: /mnt/nfs/gitlab/runner/docker/home
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/nextcloud/apps
+    mode: '0755'
+    owner: 82
+    group: 82
+    dest: /mnt/nfs/nextcloud/apps
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/nextcloud/data
+    mode: '0770'
+    owner: 82
+    group: 82
+    dest: /mnt/nfs/nextcloud/data
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/nextcloud/mysql
+    mode: '0755'
+    owner: 999
+    group: 999
+    dest: /mnt/nfs/nextcloud/mysql
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/nextcloud/redis
+    mode: '0755'
+    owner: 999
+    group: 1000
+    dest: /mnt/nfs/nextcloud/redis
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/webmail/mailserver
+    mode: '0755'
+    owner: root
+    group: root
+    dest: /mnt/nfs/webmail/mailserver
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/webmail/database
+    mode: '0755'
+    owner: 999
+    group: 999
+    dest: /mnt/nfs/webmail/database
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/webmail/rainloop
+    mode: '0755'
+    owner: 991
+    group: 991
+    dest: /mnt/nfs/webmail/rainloop
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/webmail/redis
+    mode: '0755'
+    owner: 999
+    group: 1000
+    dest: /mnt/nfs/webmail/redis
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/borg/cache
+    mode: '0755'
+    owner: 82
+    group: 82
+    dest: /mnt/nfs/borg/cache
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/borg/database
+    mode: '0755'
+    owner: 999
+    group: 999
+    dest: /mnt/nfs/borg/database
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/borg/redis
+    mode: '0755'
+    owner: 999
+    group: 1000
+    dest: /mnt/nfs/borg/redis
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/landscape/landscape
+    mode: '0755'
+    owner: 104
+    group: 108
+    dest: /mnt/nfs/landscape/landscape
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/landscape/database
+    mode: '0700'
+    owner: 999
+    group: 999
+    dest: /mnt/nfs/landscape/database
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/landscape/queue
+    mode: '0755'
+    owner: 999
+    group: 999
+    dest: /mnt/nfs/landscape/queue
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/clair/database
+    mode: '0700'
+    owner: 999
+    group: 999
+    dest: /mnt/nfs/clair/database
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/clair/clair
+    mode: '0755'
+    owner: 0
+    group: 0
+    dest: /mnt/nfs/clair/clair
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/portainer/portainer
+    mode: '0775'
+    owner: 0
+    group: 0
+    dest: /mnt/nfs/portainer/portainer
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"
+  - path: /mnt/share/xtrabackup
+    mode: '0750'
+    owner: 0
+    group: 0
+    dest: /mnt/nfs/xtrabackup
+    host: "{{ nfs_master | ipaddr('address') }}"
+    options:
+      - "{{ nfs_master | ipaddr('network/prefix') }}(rw,sync,no_root_squash,no_subtree_check)"

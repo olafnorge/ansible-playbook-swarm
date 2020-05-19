@@ -1,0 +1,56 @@
+---
+certbot_mode: production
+proxy_stats_user: stats
+manager01:
+  host: 192.168.101.2
+  port: 1022
+  user: ubuntu
+  become: yes
+  private_key_file: '~/.ssh/id_rsa'
+  ssh_args: "-o ProxyCommand='ssh -W %h:%p -q {{ virt_host.host }} -l{{ virt_host.user }} -p{{ virt_host.port }}'"
+manager02:
+  host: 192.168.101.3
+  port: 1022
+  user: ubuntu
+  become: yes
+  private_key_file: '~/.ssh/id_rsa'
+  ssh_args: "-o ProxyCommand='ssh -W %h:%p -q {{ virt_host.host }} -l{{ virt_host.user }} -p{{ virt_host.port }}'"
+manager03:
+  host: 192.168.101.4
+  port: 1022
+  user: ubuntu
+  become: yes
+  private_key_file: '~/.ssh/id_rsa'
+  ssh_args: "-o ProxyCommand='ssh -W %h:%p -q {{ virt_host.host }} -l{{ virt_host.user }} -p{{ virt_host.port }}'"
+
+nfs_master: "{{ virt_host.internal_host }}/24"
+
+virt_host:
+  host: 93.184.216.34
+  internal_host: 192.168.101.1
+  v6_host: '2606:2800:220:1:248:1893:25c8:1946'
+  port: 22
+  user: root
+  become: no
+  private_key_file: '~/.ssh/id_rsa'
+worker01:
+  host: 192.168.101.5
+  port: 1022
+  user: ubuntu
+  become: yes
+  private_key_file: '~/.ssh/id_rsa'
+  ssh_args: "-o ProxyCommand='ssh -W %h:%p -q {{ virt_host.host }} -l{{ virt_host.user }} -p{{ virt_host.port }}'"
+worker02:
+  host: 192.168.101.6
+  port: 1022
+  user: ubuntu
+  become: yes
+  private_key_file: '~/.ssh/id_rsa'
+  ssh_args: "-o ProxyCommand='ssh -W %h:%p -q {{ virt_host.host }} -l{{ virt_host.user }} -p{{ virt_host.port }}'"
+worker03:
+  host: 192.168.101.7
+  port: 1022
+  user: ubuntu
+  become: yes
+  private_key_file: '~/.ssh/id_rsa'
+  ssh_args: "-o ProxyCommand='ssh -W %h:%p -q {{ virt_host.host }} -l{{ virt_host.user }} -p{{ virt_host.port }}'"

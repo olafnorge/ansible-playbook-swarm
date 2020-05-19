@@ -1,0 +1,174 @@
+---
+nextcloud_olafnorge_de_version: 1.5.5
+nextcloud_olafnorge_de_labels:
+  - de.olafnorge.service.0.on_network=ext-proxy
+  - de.olafnorge.service.0.domains=nextcloud.example.com
+  - de.olafnorge.service.0.type=http
+  - de.olafnorge.service.0.dst_port=80
+nextcloud_olafnorge_de_network_definitions:
+  ext-proxy:
+    external: true
+  internal:
+nextcloud_olafnorge_de_networks:
+  - ext-proxy
+  - "{{ nextcloud_olafnorge_de_network_internal }}"
+nextcloud_olafnorge_de_crons:
+  - interval: '1 0 * * *'
+    user: root
+    command: "mkdir -p /backup/{{ nextcloud_olafnorge_de_name }}-$(date -I) && xtrabackup --backup --user=root --host=database --password=$(cat /run/secrets/nextcloud_olafnorge_de_db_root_password) --datadir=/var/lib/mysql --target-dir=/backup/{{ nextcloud_olafnorge_de_name }}-$(date -I) && find /backup/ ! -name {{ nextcloud_olafnorge_de_name }}-$(date -I) -name '{{ nextcloud_olafnorge_de_name }}-*' -type d -exec rm -rfv {} +"
+nextcloud_olafnorge_de_compose:
+  services:
+    nextcloud:
+      secrets:
+        - source: nextcloud_olafnorge_de_db_password
+          uid: '0'
+          gid: '82'
+          mode: 0440
+        - source: nextcloud_olafnorge_de_instance_id
+          uid: '0'
+          gid: '82'
+          mode: 0440
+        - source: nextcloud_olafnorge_de_mail_smtp_password
+          uid: '0'
+          gid: '82'
+          mode: 0440
+        - source: nextcloud_olafnorge_de_password_salt
+          uid: '0'
+          gid: '82'
+          mode: 0440
+        - source: nextcloud_olafnorge_de_secret
+          uid: '0'
+          gid: '82'
+          mode: 0440
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: volume
+          source: apps
+          target: /var/www/html/custom_apps
+          volume:
+            nocopy: true
+        - type: volume
+          source: data
+          target: /var/www/data
+          volume:
+            nocopy: true
+    database:
+      secrets:
+        - source: nextcloud_olafnorge_de_db_password
+          uid: '0'
+          gid: '999'
+          mode: 0440
+        - source: nextcloud_olafnorge_de_db_root_password
+          uid: '0'
+          gid: '999'
+          mode: 0440
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: volume
+          source: database
+          target: /var/lib/mysql
+          volume:
+            nocopy: true
+    redis:
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: volume
+          source: redis
+          target: /data
+          volume:
+            nocopy: true
+    xtrabackup:
+      secrets:
+        - source: nextcloud_olafnorge_de_db_root_password
+          uid: '0'
+          gid: '0'
+          mode: 0400
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: volume
+          source: database
+          target: /var/lib/mysql
+          read_only: true
+          volume:
+            nocopy: true
+        - type: volume
+          source: xtrabackup
+          target: /backup
+          volume:
+            nocopy: true
+  secrets:
+    nextcloud_olafnorge_de_db_password:
+      external: true
+    nextcloud_olafnorge_de_db_root_password:
+      external: true
+    nextcloud_olafnorge_de_instance_id:
+      external: true
+    nextcloud_olafnorge_de_mail_smtp_password:
+      external: true
+    nextcloud_olafnorge_de_password_salt:
+      external: true
+    nextcloud_olafnorge_de_secret:
+      external: true
+  volumes:
+    apps:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/nextcloud/apps"
+    data:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/nextcloud/data"
+    database:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/nextcloud/mysql"
+    redis:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/nextcloud/redis"
+    xtrabackup:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/xtrabackup"
+nextcloud_olafnorge_de_environment:
+  preview_max_filesize_image: -1
+  trusted_proxies:
+    - 10.0.0.0/8

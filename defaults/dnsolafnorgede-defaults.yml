@@ -1,0 +1,173 @@
+---
+dns_olafnorge_de_version: 1.1.27
+dns_olafnorge_de_labels:
+  - de.olafnorge.service.0.on_network=int-proxy
+  - de.olafnorge.service.0.domains=dns.example.com
+  - de.olafnorge.service.0.type=http
+  - de.olafnorge.service.0.dst_port=80
+dns_olafnorge_de_network_definitions:
+  int-proxy:
+    external: true
+  internal:
+dns_olafnorge_de_networks:
+  - int-proxy
+  - "{{ dns_olafnorge_de_network_internal }}"
+dns_olafnorge_de_crons:
+  - interval: '1 0 * * *'
+    user: root
+    command: "mkdir -p /backup/{{ dns_olafnorge_de_name }}-$(date -I) && xtrabackup --backup --user=root --host=database --password=$(cat /run/secrets/dns_olafnorge_de_db_root_password) --datadir=/var/lib/mysql --target-dir=/backup/{{ dns_olafnorge_de_name }}-$(date -I) && find /backup/ ! -name {{ dns_olafnorge_de_name }}-$(date -I) -name '{{ dns_olafnorge_de_name }}-*' -type d -exec rm -rfv {} +"
+dns_olafnorge_de_compose:
+  services:
+    dns:
+      secrets:
+        - source: dns_olafnorge_de_app_key
+          uid: '0'
+          gid: '82'
+          mode: 0440
+        - source: dns_olafnorge_de_cloudflare_apikey
+          uid: '0'
+          gid: '82'
+          mode: 0440
+        - source: dns_olafnorge_de_db_password
+          uid: '0'
+          gid: '82'
+          mode: 0440
+        - source: dns_olafnorge_de_pdns_api_key
+          uid: '0'
+          gid: '82'
+          mode: 0440
+        - source: dns_olafnorge_de_rollbar_token
+          uid: '0'
+          gid: '82'
+          mode: 0440
+    database:
+      secrets:
+        - source: dns_olafnorge_de_db_password
+          uid: '0'
+          gid: '999'
+          mode: 0440
+        - source: dns_olafnorge_de_db_root_password
+          uid: '0'
+          gid: '999'
+          mode: 0440
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: volume
+          source: database
+          target: /var/lib/mysql
+          volume:
+            nocopy: true
+    auth:
+      secrets:
+        - source: dns_olafnorge_de_db_password
+          uid: '0'
+          gid: '101'
+          mode: 0440
+        - source: dns_olafnorge_de_pdns_api_key
+          uid: '0'
+          gid: '101'
+          mode: 0440
+    rec:
+      secrets:
+        - source: dns_olafnorge_de_pdns_api_key
+          uid: '0'
+          gid: '101'
+          mode: 0440
+    redis:
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: volume
+          source: redis
+          target: /data
+          volume:
+            nocopy: true
+    xtrabackup:
+      secrets:
+        - source: dns_olafnorge_de_db_root_password
+          uid: '0'
+          gid: '0'
+          mode: 0400
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: volume
+          source: database
+          target: /var/lib/mysql
+          read_only: true
+          volume:
+            nocopy: true
+        - type: volume
+          source: xtrabackup
+          target: /backup
+          volume:
+            nocopy: true
+  secrets:
+    dns_olafnorge_de_app_key:
+      external: true
+    dns_olafnorge_de_cloudflare_apikey:
+      external: true
+    dns_olafnorge_de_db_password:
+      external: true
+    dns_olafnorge_de_db_root_password:
+      external: true
+    dns_olafnorge_de_pdns_api_key:
+      external: true
+    dns_olafnorge_de_rollbar_token:
+      external: true
+  volumes:
+    database:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/dns/database"
+    redis:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/dns/redis"
+    xtrabackup:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/xtrabackup"
+dns_olafnorge_de_environment:
+  pdns_forward_zones:
+    - "example.com={{ manager01.host }}:5300;{{ manager02.host }}:5300;{{ manager03.host }}:5300"
+    - "example.biz={{ manager01.host }}:5300;{{ manager02.host }}:5300;{{ manager03.host }}:5300"
+    - "example.org={{ manager01.host }}:5300;{{ manager02.host }}:5300;{{ manager03.host }}:5300"
+  pdns_forward_zones_recurse:
+    - ".=1.1.1.1;1.0.0.1"
+  pdns_log_level: 6
+  swarm_extra_hosts:
+    - "swarm-manager01.example.com|192.168.101.2"
+    - "swarm-manager02.example.com|192.168.101.3"
+    - "swarm-manager03.example.com|192.168.101.4"
+    - "swarm-worker01.example.com|192.168.101.5"
+    - "swarm-worker02.example.com|192.168.101.6"
+    - "swarm-worker03.example.com|192.168.101.7"
+  swarm_floating_ip: "{{ virt_host.internal_host if virt_host.internal_host is defined else '127.0.0.1' }}"
+  swarm_proxy_base_uri: "http://{{ virt_host.internal_host if virt_host.internal_host is defined else '127.0.0.1' }}:8080"
+  swarm_proxy_instance_name: int-proxy

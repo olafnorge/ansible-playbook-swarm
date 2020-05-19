@@ -1,0 +1,129 @@
+---
+landscape_olafnorge_de_version: 1.0.11
+landscape_olafnorge_de_labels:
+  - de.olafnorge.service.0.on_network=int-proxy
+  - de.olafnorge.service.0.domains=landscape.example.com
+  - de.olafnorge.service.0.type=http
+  - de.olafnorge.service.0.dst_port=443
+  - de.olafnorge.service.0.ssl=enabled
+  - de.olafnorge.service.0.verify=none
+landscape_olafnorge_de_network_definitions:
+  int-proxy:
+    external: true
+  internal:
+landscape_olafnorge_de_networks:
+  - int-proxy
+  - "{{ landscape_olafnorge_de_network_internal }}"
+landscape_olafnorge_de_certbot_share: "{{ certbot_share }}" # required in order to share TLS certs
+landscape_olafnorge_de_compose:
+  services:
+    landscape:
+      secrets:
+        - source: landscape_olafnorge_de_db_pass
+          uid: '0'
+          gid: '108'
+          mode: 0440
+        - source: landscape_olafnorge_de_db_landscape_pass
+          uid: '0'
+          gid: '108'
+          mode: 0440
+        - source: landscape_olafnorge_de_rabbitmq_password
+          uid: '0'
+          gid: '108'
+          mode: 0440
+        - source: landscape_olafnorge_de_smtp_pass
+          uid: '0'
+          gid: '108'
+          mode: 0440
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: volume
+          read_only: true
+          source: certbot
+          target: /etc/letsencrypt
+          volume:
+            nocopy: true
+        - type: volume
+          source: landscape
+          target: /var/lib/landscape
+    database:
+      secrets:
+        - source: landscape_olafnorge_de_db_pass
+          uid: '0'
+          gid: '999'
+          mode: 0440
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: volume
+          source: database
+          target: /var/lib/postgresql/data
+          volume:
+            nocopy: true
+    queue:
+      secrets:
+        - source: landscape_olafnorge_de_rabbitmq_password
+          uid: '0'
+          gid: '999'
+          mode: 0440
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: volume
+          source: queue
+          target: /var/lib/rabbitmq
+          volume:
+            nocopy: true
+  secrets:
+    landscape_olafnorge_de_db_pass:
+      external: true
+    landscape_olafnorge_de_db_landscape_pass:
+      external: true
+    landscape_olafnorge_de_rabbitmq_password:
+      external: true
+    landscape_olafnorge_de_smtp_pass:
+      external: true
+  volumes:
+    certbot:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,ro
+        device: ":{{ landscape_olafnorge_de_certbot_share }}/etc"
+    database:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/landscape/database"
+    landscape:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/landscape/landscape"
+    queue:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/landscape/queue"

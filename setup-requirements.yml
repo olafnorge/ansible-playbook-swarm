@@ -1,0 +1,35 @@
+---
+# prepare our workspace
+- name: install/update requirements (roles)
+  hosts: localhost
+  connection: local
+  become: no
+  gather_facts: no
+  any_errors_fatal: yes # ensure we stop if we can't install the roles properly
+  vars_files:
+    - defaults/borgolafnorgede-defaults.yml
+    - defaults/clairolafnorgede-defaults.yml
+    - defaults/dnsolafnorgede-defaults.yml
+    - defaults/nextcloudolafnorgede-defaults.yml
+    - defaults/dyndnsolafnorgede-defaults.yml
+    - defaults/gitlabolafnorgede-defaults.yml
+    - defaults/landscapeolafnorgede-defaults.yml
+    - defaults/lbolafnorgede-defaults.yml
+    - defaults/oautholafnorgede-defaults.yml
+    - defaults/portainerolafnorgede-defaults.yml
+    - defaults/satisolafnorgede-defaults.yml
+    - defaults/webmailolafnorgede-defaults.yml
+  tags:
+    - always # ensure we always run the preparation tasks
+  tasks:
+    - name: write requirements.yml
+      template:
+        backup: no
+        dest: "{{ playbook_dir }}/requirements.yml"
+        src: requirements.yml.j2
+      when:
+        - not (skip_requirements | default(False) | bool)
+    - name: install roles from requirements.yml
+      command: ansible-galaxy install --role-file="{{ playbook_dir }}/requirements.yml" --force
+      when:
+        - not (skip_requirements | default(False) | bool)

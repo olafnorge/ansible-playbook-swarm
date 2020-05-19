@@ -1,0 +1,184 @@
+---
+gitlab_olafnorge_de_role_version: 1.4.19
+gitlab_olafnorge_de_labels:
+  - de.olafnorge.service.on_network=int-proxy
+  - de.olafnorge.on_network=int-proxy
+  - de.olafnorge.service.0.domains=gitlab.example.com,registry.example.com
+  - de.olafnorge.service.0.type=http
+  - de.olafnorge.service.0.dst_port=80
+  - de.olafnorge.service.1.type=ssh
+  - de.olafnorge.service.1.domains=gitlab.example.com
+  - de.olafnorge.service.1.dst_port=22
+gitlab_olafnorge_de_network_definitions:
+  int-proxy:
+    external: true
+gitlab_olafnorge_de_networks:
+  - int-proxy
+gitlab_olafnorge_de_compose:
+  services:
+    gitlab:
+      healthcheck:
+        disable: true
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: volume
+          source: gitlab_etc
+          target: /etc/gitlab
+          volume:
+            nocopy: true
+        - type: volume
+          source: gitlab_log
+          target: /var/log/gitlab
+          volume:
+            nocopy: true
+        - type: volume
+          source: gitlab_opt
+          target: /var/opt/gitlab
+          volume:
+            nocopy: true
+    ansiblerunner:
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: bind
+          source: /var/run/docker.sock
+          target: /var/run/docker.sock
+        - type: volume
+          source: ansiblerunner_home
+          target: /home/gitlab-runner
+          volume:
+            nocopy: true
+    buildrunner:
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: bind
+          source: /var/run/docker.sock
+          target: /var/run/docker.sock
+        - type: volume
+          source: buildrunner_home
+          target: /home/gitlab-runner
+          volume:
+            nocopy: true
+    catchallrunner:
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: bind
+          source: /var/run/docker.sock
+          target: /var/run/docker.sock
+        - type: volume
+          source: catchallrunner_home
+          target: /home/gitlab-runner
+          volume:
+            nocopy: true
+    clairrunner:
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: bind
+          source: /var/run/docker.sock
+          target: /var/run/docker.sock
+        - type: volume
+          source: clairrunner_home
+          target: /home/gitlab-runner
+          volume:
+            nocopy: true
+    dockerrunner:
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: bind
+          source: /var/run/docker.sock
+          target: /var/run/docker.sock
+        - type: volume
+          source: dockerrunner_home
+          target: /home/gitlab-runner
+          volume:
+            nocopy: true
+  volumes:
+    gitlab_etc:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/gitlab/etc"
+    gitlab_log:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/gitlab/log"
+    gitlab_opt:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/gitlab/opt"
+    ansiblerunner_home:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/gitlab/runner/ansible/home"
+    buildrunner_home:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/gitlab/runner/build/home"
+    catchallrunner_home:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/gitlab/runner/catchall/home"
+    clairrunner_home:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/gitlab/runner/clair/home"
+    dockerrunner_home:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/gitlab/runner/docker/home"

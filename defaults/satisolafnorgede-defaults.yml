@@ -1,0 +1,201 @@
+---
+satis_olafnorge_de_version: 1.2.2
+satis_olafnorge_de_labels:
+  - de.olafnorge.service.0.on_network=ext-proxy
+  - de.olafnorge.service.0.domains=satis.example.com
+  - de.olafnorge.service.0.type=http
+  - de.olafnorge.service.0.dst_port=80
+  - de.olafnorge.service.0.allowed_methods=GET,HEAD,POST,OPTIONS,DELETE
+satis_olafnorge_de_network_definitions:
+  ext-proxy:
+    external: true
+  internal:
+satis_olafnorge_de_networks:
+  - ext-proxy
+  - "{{ satis_olafnorge_de_network_internal }}"
+satis_olafnorge_de_crons:
+  - interval: '1 0 * * *'
+    user: root
+    command: "mkdir -p /backup/{{ satis_olafnorge_de_name }}-$(date -I) && xtrabackup --backup --user=root --host=database --password=$(cat /run/secrets/satis_olafnorge_de_db_root_password) --datadir=/var/lib/mysql --target-dir=/backup/{{ satis_olafnorge_de_name }}-$(date -I) && find /backup/ ! -name {{ satis_olafnorge_de_name }}-$(date -I) -name '{{ satis_olafnorge_de_name }}-*' -type d -exec rm -rfv {} +"
+satis_olafnorge_de_compose:
+  services:
+    satis:
+      secrets:
+        - source: satis_olafnorge_de_app_key
+          uid: '0'
+          gid: '33'
+          mode: 0440
+        - source: satis_olafnorge_de_auth_json
+          uid: '0'
+          gid: '33'
+          mode: 0440
+        - source: satis_olafnorge_de_db_password
+          uid: '0'
+          gid: '33'
+          mode: 0440
+        - source: satis_olafnorge_de_github_oauth
+          uid: '0'
+          gid: '33'
+          mode: 0440
+        - source: satis_olafnorge_de_gitlab_token
+          uid: '0'
+          gid: '33'
+          mode: 0440
+        - source: satis_olafnorge_de_htpasswd_password
+          uid: '0'
+          gid: '33'
+          mode: 0440
+        - source: satis_olafnorge_de_http_basic
+          uid: '0'
+          gid: '33'
+          mode: 0440
+        - source: satis_olafnorge_de_mail_password
+          uid: '0'
+          gid: '33'
+          mode: 0440
+        - source: satis_olafnorge_de_oauth_client_secret
+          uid: '0'
+          gid: '33'
+          mode: 0440
+        - source: satis_olafnorge_de_rollbar_token
+          uid: '0'
+          gid: '33'
+          mode: 0440
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: volume
+          source: repositories
+          target: /var/www/html/storage/satis
+          volume:
+            nocopy: true
+        - type: volume
+          source: cache
+          target: /var/www/.composer
+          volume:
+            nocopy: true
+    database:
+      secrets:
+        - source: satis_olafnorge_de_db_password
+          uid: '0'
+          gid: '999'
+          mode: 0440
+        - source: satis_olafnorge_de_db_root_password
+          uid: '0'
+          gid: '999'
+          mode: 0440
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: volume
+          source: database
+          target: /var/lib/mysql
+          volume:
+            nocopy: true
+    redis:
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: volume
+          source: redis
+          target: /data
+          volume:
+            nocopy: true
+    xtrabackup:
+      secrets:
+        - source: satis_olafnorge_de_db_root_password
+          uid: '0'
+          gid: '0'
+          mode: 0400
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: volume
+          source: database
+          target: /var/lib/mysql
+          read_only: true
+          volume:
+            nocopy: true
+        - type: volume
+          source: xtrabackup
+          target: /backup
+          volume:
+            nocopy: true
+  secrets:
+    satis_olafnorge_de_app_key:
+      external: true
+    satis_olafnorge_de_auth_json:
+      external: true
+    satis_olafnorge_de_db_password:
+      external: true
+    satis_olafnorge_de_db_root_password:
+      external: true
+    satis_olafnorge_de_github_oauth:
+      external: true
+    satis_olafnorge_de_gitlab_token:
+      external: true
+    satis_olafnorge_de_htpasswd_password:
+      external: true
+    satis_olafnorge_de_http_basic:
+      external: true
+    satis_olafnorge_de_mail_password:
+      external: true
+    satis_olafnorge_de_oauth_client_secret:
+      external: true
+    satis_olafnorge_de_rollbar_token:
+      external: true
+  volumes:
+    database:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/satis/database"
+    repositories:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/satis/repositories"
+    cache:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/satis/cache"
+    redis:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/satis/redis"
+    xtrabackup:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/xtrabackup"

@@ -1,0 +1,60 @@
+---
+- name: borgolafnorgede-role
+  src: git@github.com:olafnorge/ansible-borg-role.git
+  scm: git
+  version: {{ borg_olafnorge_de_version if (borg_olafnorge_de_version is defined) and (borg_olafnorge_de_version != 'latest') else 'master' }}
+
+- name: clairolafnorgede-role
+  src: git@github.com:olafnorge/ansible-clair-role.git
+  scm: git
+  version: {{ clair_olafnorge_de_role_version if clair_olafnorge_de_role_version is defined else 'master' }}
+
+- name: dnsolafnorgede-role
+  src: git@github.com:olafnorge/ansible-dns-role.git
+  scm: git
+  version: {{ dns_olafnorge_de_version if (dns_olafnorge_de_version is defined) and (dns_olafnorge_de_version != 'latest') else 'master' }}
+
+- name: dyndnsolafnorgede-role
+  src: git@github.com:olafnorge/ansible-dyndns-role.git
+  scm: git
+  version: {{ dyndns_olafnorge_de_version if (dyndns_olafnorge_de_version is defined) and (dyndns_olafnorge_de_version != 'latest') else 'master' }}
+
+- name: gitlabolafnorgede-role
+  src: git@github.com:olafnorge/ansible-gitlab-role.git
+  scm: git
+  version: {{ gitlab_olafnorge_de_role_version if gitlab_olafnorge_de_role_version is defined else 'master' }}
+
+- name: landscapeolafnorgede-role
+  src: git@github.com:olafnorge/ansible-landscape-role.git
+  scm: git
+  version: {{ landscape_olafnorge_de_version if (landscape_olafnorge_de_version is defined) and (landscape_olafnorge_de_version != 'latest') else 'master' }}
+
+- name: lbolafnorgede-role
+  src: git@github.com:olafnorge/ansible-edge-lb-role.git
+  scm: git
+  version: {{ lb_olafnorge_de_role_version if lb_olafnorge_de_role_version is defined else 'master' }}
+
+- name: nextcloudolafnorgede-role
+  src: git@github.com:olafnorge/ansible-nextcloud-role.git
+  scm: git
+  version: {{ nextcloud_olafnorge_de_version if (nextcloud_olafnorge_de_version is defined) and (nextcloud_olafnorge_de_version != 'latest') else 'master' }}
+
+- name: oautholafnorgede-role
+  src: git@github.com:olafnorge/ansible-oauth-proxy-role.git
+  scm: git
+  version: {{ oauth_olafnorge_de_version if (oauth_olafnorge_de_version is defined) and (oauth_olafnorge_de_version != 'latest') else 'master' }}
+
+- name: portainerolafnorgede-role
+  src: git@github.com:olafnorge/ansible-portainer-role.git
+  scm: git
+  version: {{ portainer_olafnorge_de_role_version if portainer_olafnorge_de_role_version is defined else 'master' }}
+
+- name: satisolafnorgede-role
+  src: git@github.com:olafnorge/ansible-satis-role.git
+  scm: git
+  version: {{ satis_olafnorge_de_version if (satis_olafnorge_de_version is defined) and (satis_olafnorge_de_version != 'latest') else 'master' }}
+
+- name: webmailolafnorgede-role
+  src: git@github.com:olafnorge/ansible-webmail-role.git
+  scm: git
+  version: {{ webmail_olafnorge_de_version if (webmail_olafnorge_de_version is defined) and (webmail_olafnorge_de_version != 'latest') else 'master' }}

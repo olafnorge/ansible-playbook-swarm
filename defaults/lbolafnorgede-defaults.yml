@@ -1,0 +1,121 @@
+---
+lb_olafnorge_de_role_version: 1.2.5
+lb_olafnorge_de_certbot_share: "{{ certbot_share }}" # comes from the inventory
+lb_olafnorge_de_certbot_environment:
+  email: user@example.com
+  mode: "{{ certbot_mode }}" # comes from the inventory
+lb_olafnorge_de_haproxy_version: 2.0
+lb_olafnorge_de_certbot_version: v1.4.0
+
+lb_olafnorge_de_compose:
+  services:
+    ext-proxy:
+      environment:
+        DATAPLANE_CLIENT_RELOAD_AFTER: 60
+        DATAPLANE_RELOAD_DELAY: 15
+        DATAPLANE_RELOAD_RETENTION: 10
+        HAPROXY_CRT_FOLDER_PATTERN: /etc/letsencrypt/live/*/*.combined.pem*
+      ports:
+        - "{{ ext_proxy_bind_smtp }}:25"
+        - "{{ ext_proxy_bind_http }}:80"
+        - "{{ ext_proxy_bind_imap }}:143"
+        - "{{ ext_proxy_bind_https }}:443"
+        - "{{ ext_proxy_bind_smtps }}:465"
+        - "{{ ext_proxy_bind_submission }}:587"
+        - "{{ ext_proxy_bind_imaps }}:993"
+        - "{{ ext_proxy_bind_sieve }}:4190"
+        - 9002:9000
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: bind
+          source: /var/run/docker.sock
+          target: /var/run/docker.sock
+        - type: volume
+          read_only: true
+          source: certbot
+          target: /etc/letsencrypt
+          volume:
+            nocopy: true
+    int-proxy:
+      environment:
+        DATAPLANE_CLIENT_RELOAD_AFTER: 60
+        DATAPLANE_NOTIFY_ENABLED: "true"
+        DATAPLANE_NOTIFY_CREATE_SERVICE_URL: "http://dnsolafnorgede_dns/notify/reconfigure"
+        DATAPLANE_NOTIFY_REMOVE_SERVICE_URL: "http://dnsolafnorgede_dns/notify/remove"
+        DATAPLANE_RELOAD_DELAY: 15
+        DATAPLANE_RELOAD_RETENTION: 10
+        HAPROXY_CRT_FOLDER_PATTERN: /etc/letsencrypt/live/*/*.combined.pem*
+      ports:
+        - "{{ int_proxy_bind_http }}:80"
+        - "{{ int_proxy_bind_https }}:443"
+        - "{{ int_proxy_bind_sshd }}:22"
+        - "{{ int_proxy_bind_api }}:8080"
+        - 9001:9000
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: bind
+          source: /var/run/docker.sock
+          target: /var/run/docker.sock
+        - type: volume
+          read_only: true
+          source: certbot
+          target: /etc/letsencrypt
+          volume:
+            nocopy: true
+    certbot:
+      environment:
+        DOMAIN_1: "*.example.org"
+        DOMAIN_2: "*.example.biz"
+        DOMAIN_4: "*.example.com"
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: volume
+          source: certbot_etc
+          target: /etc/letsencrypt
+          volume:
+            nocopy: true
+        - type: volume
+          source: certbot_var
+          target: /var/lib/letsencrypt
+          volume:
+            nocopy: true
+  volumes:
+    certbot:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,ro
+        device: ":{{ lb_olafnorge_de_certbot_share }}/etc"
+    certbot_etc:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":{{ lb_olafnorge_de_certbot_share }}/etc"
+    certbot_var:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":{{ lb_olafnorge_de_certbot_share }}/var"

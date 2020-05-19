@@ -1,0 +1,243 @@
+---
+webmail_olafnorge_de_version: 1.1.9
+webmail_olafnorge_de_mail_labels:
+  # smtp
+  - de.olafnorge.service.0.on_network=ext-proxy
+  - de.olafnorge.service.0.type=mail
+  - "de.olafnorge.service.0.dst_port={{ ext_proxy_bind_smtp }}"
+  - de.olafnorge.service.0.src_port=25
+
+  # imap
+  - de.olafnorge.service.1.on_network=ext-proxy
+  - de.olafnorge.service.1.type=mail
+  - "de.olafnorge.service.1.dst_port={{ ext_proxy_bind_imap }}"
+  - de.olafnorge.service.1.src_port=143
+
+  # smtps
+  - de.olafnorge.service.2.on_network=ext-proxy
+  - de.olafnorge.service.2.type=mail
+  - "de.olafnorge.service.2.dst_port={{ ext_proxy_bind_smtps }}"
+  - de.olafnorge.service.2.src_port=465
+
+  # submission
+  - de.olafnorge.service.3.on_network=ext-proxy
+  - de.olafnorge.service.3.type=mail
+  - "de.olafnorge.service.3.dst_port={{ ext_proxy_bind_submission }}"
+  - de.olafnorge.service.3.src_port=587
+
+  # imaps
+  - de.olafnorge.service.4.on_network=ext-proxy
+  - de.olafnorge.service.4.type=mail
+  - "de.olafnorge.service.4.dst_port={{ ext_proxy_bind_imaps }}"
+  - de.olafnorge.service.4.src_port=993
+
+  # sieve
+  - de.olafnorge.service.5.on_network=ext-proxy
+  - de.olafnorge.service.5.type=mail
+  - "de.olafnorge.service.5.dst_port={{ ext_proxy_bind_sieve }}"
+  - de.olafnorge.service.5.src_port=4190
+
+  # rspam
+  - de.olafnorge.service.6.on_network=int-proxy
+  - de.olafnorge.service.6.domains=spam.example.com
+  - de.olafnorge.service.6.type=http
+  - de.olafnorge.service.6.dst_port=11334
+webmail_olafnorge_de_rainloop_labels:
+  - de.olafnorge.service.0.on_network=ext-proxy
+  - de.olafnorge.service.0.domains=webmail.example.com,webmail.example.biz,webmail.example.org
+  - de.olafnorge.service.0.type=http
+  - de.olafnorge.service.0.dst_port=8888
+webmail_olafnorge_de_postfixadmin_labels:
+  - de.olafnorge.service.0.on_network=int-proxy
+  - de.olafnorge.service.0.domains=postfixadmin.example.com
+  - de.olafnorge.service.0.type=http
+  - de.olafnorge.service.0.dst_port=8888
+webmail_olafnorge_de_network_definitions:
+  ext-proxy:
+    external: true
+  int-proxy:
+    external: true
+  internal:
+webmail_olafnorge_de_mail_networks:
+  - ext-proxy
+  - int-proxy
+  - "{{ webmail_olafnorge_de_network_internal }}"
+webmail_olafnorge_de_postfixadmin_networks:
+  - int-proxy
+  - "{{ webmail_olafnorge_de_network_internal }}"
+webmail_olafnorge_de_rainloop_networks:
+  - ext-proxy
+  - "{{ webmail_olafnorge_de_network_internal }}"
+webmail_olafnorge_de_certbot_share: "{{ certbot_share }}"
+webmail_olafnorge_de_mail_environment:
+  disable_dns_resolver: 'true'
+#  relay_networks: '' ' keeping this line on order to react on an open relay
+webmail_olafnorge_de_crons:
+  - interval: '1 0 * * *'
+    user: root
+    command: "mkdir -p /backup/{{ webmail_olafnorge_de_name }}-$(date -I) && xtrabackup --backup --user=root --host=database --password=$(cat /run/secrets/webmail_olafnorge_de_db_root_password) --datadir=/var/lib/mysql --target-dir=/backup/{{ webmail_olafnorge_de_name }}-$(date -I) && find /backup/ ! -name {{ webmail_olafnorge_de_name }}-$(date -I) -name '{{ webmail_olafnorge_de_name }}-*' -type d -exec rm -rfv {} +"
+webmail_olafnorge_de_compose:
+  services:
+    mailserver:
+      secrets:
+        - source: webmail_olafnorge_de_mail_db_password
+          uid: '0'
+          gid: '0'
+          mode: 0440
+        - source: webmail_olafnorge_de_mail_rspamd_password
+          uid: '0'
+          gid: '0'
+          mode: 0440
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: volume
+          read_only: true
+          source: certbot
+          target: /etc/letsencrypt
+          volume:
+            nocopy: true
+        - type: volume
+          source: mailserver
+          target: /var/mail
+          volume:
+            nocopy: true
+    rainloop:
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: volume
+          source: rainloop
+          target: /rainloop/data
+          volume:
+            nocopy: true
+    database:
+      secrets:
+        - source: webmail_olafnorge_de_mail_db_password
+          uid: '0'
+          gid: '999'
+          mode: 0440
+        - source: webmail_olafnorge_de_db_root_password
+          uid: '0'
+          gid: '999'
+          mode: 0440
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: volume
+          source: database
+          target: /var/lib/mysql
+          volume:
+            nocopy: true
+    postfixadmin:
+      secrets:
+        - source: webmail_olafnorge_de_mail_db_password
+        - source: webmail_olafnorge_de_postfixadmin_setup_password
+        - source: webmail_olafnorge_de_postfixadmin_setup_password_hash
+    redis:
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: volume
+          source: redis
+          target: /data
+          volume:
+            nocopy: true
+    xtrabackup:
+      secrets:
+        - source: webmail_olafnorge_de_db_root_password
+          uid: '0'
+          gid: '0'
+          mode: 0400
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: volume
+          source: database
+          target: /var/lib/mysql
+          read_only: true
+          volume:
+            nocopy: true
+        - type: volume
+          source: xtrabackup
+          target: /backup
+          volume:
+            nocopy: true
+  secrets:
+    webmail_olafnorge_de_db_root_password:
+      external: true
+    webmail_olafnorge_de_mail_db_password:
+      external: true
+    webmail_olafnorge_de_mail_rspamd_password:
+      external: true
+    webmail_olafnorge_de_postfixadmin_setup_password:
+      external: true
+    webmail_olafnorge_de_postfixadmin_setup_password_hash:
+      external: true
+  volumes:
+    certbot:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,ro
+        device: ":{{ webmail_olafnorge_de_certbot_share }}/etc"
+    database:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/webmail/database"
+    mailserver:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/webmail/mailserver"
+    rainloop:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/webmail/rainloop"
+    redis:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/webmail/redis"
+    xtrabackup:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/xtrabackup"

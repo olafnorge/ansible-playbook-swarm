@@ -1,0 +1,44 @@
+---
+- import_playbook: setup-requirements.yml
+
+- name: setup haproxy
+  hosts: virt-host
+  handlers:
+    - name: restart haproxy
+      service:
+        enabled: yes
+        name: haproxy
+        state: restarted
+      listen: "restart haproxy"
+      when:
+        - (haproxy_config_created is changed)
+  tasks:
+    - name: install pre-requisites
+      apt:
+        install_recommends: no
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - software-properties-common
+        state: present
+        update_cache: yes
+    - name: add haproxy deb repository
+      apt_repository:
+        filename: haproxy
+        repo: ppa:vbernat/haproxy-2.0
+        state: present
+        update_cache: yes
+    - name: install haproxy
+      apt:
+        install_recommends: no
+        name: haproxy
+        state: present
+        update_cache: yes
+    - name: write haproxy config
+      template:
+        backup: yes
+        dest: /etc/haproxy/haproxy.cfg
+        src: haproxy.cfg.j2
+        validate: 'haproxy -c -V -f %s'
+      notify: "restart haproxy"
+      register: haproxy_config_created

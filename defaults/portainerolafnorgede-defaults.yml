@@ -1,0 +1,38 @@
+---
+portainer_olafnorge_de_role_version: 1.0.7
+portainer_olafnorge_de_labels:
+  - de.olafnorge.service.0.on_network=int-proxy
+  - de.olafnorge.service.0.domains=portainer.example.com
+  - de.olafnorge.service.0.type=http
+  - de.olafnorge.service.0.dst_port=9000
+portainer_olafnorge_de_network_definitions:
+  int-proxy:
+    external: true
+  internal:
+portainer_olafnorge_de_networks:
+  - int-proxy
+  - "{{ portainer_olafnorge_de_network_internal }}"
+portainer_olafnorge_de_compose:
+  services:
+    portainer:
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: volume
+          source: portainer
+          target: /data
+          volume:
+            nocopy: true
+  volumes:
+    portainer:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/portainer/portainer"

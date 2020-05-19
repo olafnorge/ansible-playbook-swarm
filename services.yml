@@ -1,0 +1,162 @@
+---
+- import_playbook: setup-requirements.yml
+
+# deploy the service(s)
+- name: setup services
+  hosts: primary-manager
+  tasks:
+    - name: install borg.example.com
+      include_role:
+        name: borgolafnorgede-role
+        vars_from: "{{ playbook_dir }}/defaults/borgolafnorgede-defaults.yml"
+        public: no
+        apply:
+          tags:
+            - borgolafnorgede
+            - borg
+      tags:
+        - borgolafnorgede
+        - borg
+
+    - name: install clair.example.com
+      include_role:
+        name: clairolafnorgede-role
+        vars_from: "{{ playbook_dir }}/defaults/clairolafnorgede-defaults.yml"
+        public: no
+        apply:
+          tags:
+            - clairolafnorgede
+            - clair
+      tags:
+        - clairolafnorgede
+        - clair
+
+    - name: install dns.example.com
+      include_role:
+        name: dnsolafnorgede-role
+        vars_from: "{{ playbook_dir }}/defaults/dnsolafnorgede-defaults.yml"
+        public: no
+        apply:
+          tags:
+            - dnsolafnorgede
+            - dns
+      tags:
+        - dnsolafnorgede
+        - dns
+
+    - name: install dyndns.example.com
+      include_role:
+        name: dyndnsolafnorgede-role
+        vars_from: "{{ playbook_dir }}/defaults/dyndnsolafnorgede-defaults.yml"
+        public: no
+        apply:
+          tags:
+            - dyndnsolafnorgede
+            - dyndns
+      tags:
+        - dyndnsolafnorgede
+        - dyndns
+
+    - name: install gitlab.example.com
+      include_role:
+        name: gitlabolafnorgede-role
+        vars_from: "{{ playbook_dir }}/defaults/gitlabolafnorgede-defaults.yml"
+        public: no
+        apply:
+          tags:
+            - gitlabolafnorgede
+            - gitlab
+      tags:
+        - gitlabolafnorgede
+        - gitlab
+
+    - name: install landscape.example.com
+      include_role:
+        name: landscapeolafnorgede-role
+        vars_from: "{{ playbook_dir }}/defaults/landscapeolafnorgede-defaults.yml"
+        public: no
+        apply:
+          tags:
+            - landscapeolafnorgede
+            - landscape
+      tags:
+        - landscapeolafnorgede
+        - landscape
+
+    - name: install lb.example.com
+      include_role:
+        name: lbolafnorgede-role
+        vars_from: "{{ playbook_dir }}/defaults/lbolafnorgede-defaults.yml"
+        public: no
+        apply:
+          tags:
+            - lbolafnorgede
+            - lb
+      tags:
+        - lbolafnorgede
+        - lb
+
+    - name: install nextcloud.example.com
+      include_role:
+        name: nextcloudolafnorgede-role
+        vars_from: "{{ playbook_dir }}/defaults/nextcloudolafnorgede-defaults.yml"
+        public: no
+        apply:
+          tags:
+            - nextcloudolafnorgede
+            - nextcloud
+      tags:
+        - nextcloudolafnorgede
+        - nextcloud
+
+    - name: install oauth.example.com
+      include_role:
+        name: oautholafnorgede-role
+        vars_from: "{{ playbook_dir }}/defaults/oautholafnorgede-defaults.yml"
+        public: no
+        apply:
+          tags:
+            - oautholafnorgede
+            - oauth
+      tags:
+        - oautholafnorgede
+        - oauth
+
+    - name: install portainer.example.com
+      include_role:
+        name: portainerolafnorgede-role
+        vars_from: "{{ playbook_dir }}/defaults/portainerolafnorgede-defaults.yml"
+        public: no
+        apply:
+          tags:
+            - portainerolafnorgede
+            - portainer
+      tags:
+        - portainerolafnorgede
+        - portainer
+
+    - name: install satis.example.com
+      include_role:
+        name: satisolafnorgede-role
+        vars_from: "{{ playbook_dir }}/defaults/satisolafnorgede-defaults.yml"
+        public: no
+        apply:
+          tags:
+            - satisolafnorgede
+            - satis
+      tags:
+        - satisolafnorgede
+        - satis
+
+    - name: install webmail.example.com
+      include_role:
+        name: webmailolafnorgede-role
+        vars_from: "{{ playbook_dir }}/defaults/webmailolafnorgede-defaults.yml"
+        public: no
+        apply:
+          tags:
+            - webmailolafnorgede
+            - webmail
+      tags:
+        - webmailolafnorgede
+        - webmail

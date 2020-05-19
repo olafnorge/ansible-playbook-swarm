@@ -1,0 +1,41 @@
+virt-host ansible_host="{{ virt_host.host }}" ansible_port="{{ virt_host.port | default(22) }}" ansible_user="{{ virt_host.user | default('root') }}" ansible_become="{{ virt_host.become | default(no) }}" ansible_ssh_private_key_file="{{ virt_host.private_key_file | default('~/.ssh/id_rsa') }}" ansible_ssh_extra_args="{{ virt_host.ssh_args }}"
+primary-manager ansible_host="{{ manager_primary.host }}" ansible_port="{{ manager_primary.port | default(22) }}" ansible_user="{{ manager_primary.user | default('root') }}" ansible_become="{{ manager_primary.become | default(no) }}" ansible_ssh_private_key_file="{{ manager_primary.private_key_file | default('~/.ssh/id_rsa') }}" ansible_ssh_extra_args="{{ manager_primary.ssh_args }}"
+
+
+########### managers ###########
+[odd_managers]
+manager01 ansible_host="{{ manager01.host }}" ansible_port="{{ manager01.port | default(22) }}" ansible_user="{{ manager01.user | default('root') }}" ansible_become="{{ manager01.become | default(no) }}" ansible_ssh_private_key_file="{{ manager01.private_key_file | default('~/.ssh/id_rsa') }}" ansible_ssh_extra_args="{{ manager01.ssh_args }}"
+manager03 ansible_host="{{ manager03.host }}" ansible_port="{{ manager03.port | default(22) }}" ansible_user="{{ manager03.user | default('root') }}" ansible_become="{{ manager03.become | default(no) }}" ansible_ssh_private_key_file="{{ manager03.private_key_file | default('~/.ssh/id_rsa') }}" ansible_ssh_extra_args="{{ manager03.ssh_args }}"
+
+[even_managers]
+manager02 ansible_host="{{ manager02.host }}" ansible_port="{{ manager02.port | default(22) }}" ansible_user="{{ manager02.user | default('root') }}" ansible_become="{{ manager02.become | default(no) }}" ansible_ssh_private_key_file="{{ manager02.private_key_file | default('~/.ssh/id_rsa') }}" ansible_ssh_extra_args="{{ manager02.ssh_args }}"
+
+[managers:children]
+odd_managers
+even_managers
+
+
+########### workers ###########
+[odd_workers]
+worker01 ansible_host="{{ worker01.host }}" ansible_port="{{ worker01.port | default(22) }}" ansible_user="{{ worker01.user | default('root') }}" ansible_become="{{ worker01.become | default(no) }}" ansible_ssh_private_key_file="{{ worker01.private_key_file | default('~/.ssh/id_rsa') }}" ansible_ssh_extra_args="{{ worker01.ssh_args }}"
+worker03 ansible_host="{{ worker03.host }}" ansible_port="{{ worker03.port | default(22) }}" ansible_user="{{ worker03.user | default('root') }}" ansible_become="{{ worker03.become | default(no) }}" ansible_ssh_private_key_file="{{ worker03.private_key_file | default('~/.ssh/id_rsa') }}" ansible_ssh_extra_args="{{ worker03.ssh_args }}"
+
+[even_workers]
+worker02 ansible_host="{{ worker02.host }}" ansible_port="{{ worker02.port | default(22) }}" ansible_user="{{ worker02.user | default('root') }}" ansible_become="{{ worker02.become | default(no) }}" ansible_ssh_private_key_file="{{ worker02.private_key_file | default('~/.ssh/id_rsa') }}" ansible_ssh_extra_args="{{ worker02.ssh_args }}"
+
+[workers:children]
+odd_workers
+even_workers
+
+
+########### all odd servers ###########
+[odd:children]
+odd_managers
+odd_workers
+
+
+########### all even servers ###########
+[even:children]
+even_managers
+even_workers
+

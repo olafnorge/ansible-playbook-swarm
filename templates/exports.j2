@@ -1,0 +1,5 @@
+# {{ ansible_managed }}
+
+{% for nfs_share in nfs_shares %}
+{{ nfs_share.path }}  {{ nfs_share.options | join(' ') }}
+{% endfor %}

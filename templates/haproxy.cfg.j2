@@ -1,0 +1,188 @@
+global
+  log /dev/log	local0
+  log /dev/log	local1 notice
+  chroot /var/lib/haproxy
+  user haproxy
+  group haproxy
+  daemon
+  stats timeout 30s
+  stats socket ipv4@{{ virt_host.internal_host }}:9999 level admin
+  stats socket /var/run/haproxy.sock mode 660 level admin
+  maxconn 16384
+  spread-checks 2
+
+defaults
+  log	global
+  mode	tcp
+  balance roundrobin
+  option	tcplog
+  option	dontlognull
+  option  redispatch
+  timeout connect 10s
+  timeout client  300s
+  timeout server  300s
+  timeout queue   30s
+  timeout tunnel  3600s
+  errorfile 400 /etc/haproxy/errors/400.http
+  errorfile 403 /etc/haproxy/errors/403.http
+  errorfile 408 /etc/haproxy/errors/408.http
+  errorfile 500 /etc/haproxy/errors/500.http
+  errorfile 502 /etc/haproxy/errors/502.http
+  errorfile 503 /etc/haproxy/errors/503.http
+  errorfile 504 /etc/haproxy/errors/504.http
+
+frontend external_services
+  # IPv4
+  bind {{ virt_host.host }}:25     # smtp
+  bind {{ virt_host.host }}:80     # http
+  bind {{ virt_host.host }}:143    # imap
+  bind {{ virt_host.host }}:443    # https
+  bind {{ virt_host.host }}:465    # smtps
+  bind {{ virt_host.host }}:587    # submission
+  bind {{ virt_host.host }}:993    # imaps
+  bind {{ virt_host.host }}:4190   # sieve
+{% if virt_host.v6_host is defined %}
+  # IPv6
+  bind {{ virt_host.v6_host }}:25     # smtp
+  bind {{ virt_host.v6_host }}:80     # http
+  bind {{ virt_host.v6_host }}:143    # imap
+  bind {{ virt_host.v6_host }}:443    # https
+  bind {{ virt_host.v6_host }}:465    # smtps
+  bind {{ virt_host.v6_host }}:587    # submission
+  bind {{ virt_host.v6_host }}:993    # imaps
+  bind {{ virt_host.v6_host }}:4190   # sieve
+{% endif %}
+
+  maxconn 12288
+
+  # smtp
+  acl smtp_acl dst_port 25
+  use_backend external_smtp_back if smtp_acl
+
+  # http
+  acl http_acl dst_port 80
+  use_backend external_http_back if http_acl
+
+  # imap
+  acl imap_acl dst_port 143
+  use_backend external_imap_back if imap_acl
+
+  # https
+  acl https_acl dst_port 443
+  use_backend external_https_back if https_acl
+
+  # smtps
+  acl smtps_acl dst_port 465
+  use_backend external_smtps_back if smtps_acl
+
+  # submission
+  acl submission_acl dst_port 587
+  use_backend external_submission_back if submission_acl
+
+  # imaps
+  acl imaps_acl dst_port 993
+  use_backend external_imaps_back if imaps_acl
+
+  # sieve
+  acl sieve_acl dst_port 4190
+  use_backend external_sieve_back if sieve_acl
+
+backend external_smtp_back
+  server swarm-manager01 {{ manager01.host }}:{{ ext_proxy_bind_smtp }} check inter 2000ms send-proxy-v2
+  server swarm-manager02 {{ manager02.host }}:{{ ext_proxy_bind_smtp }} check inter 2000ms send-proxy-v2
+  server swarm-manager03 {{ manager03.host }}:{{ ext_proxy_bind_smtp }} check inter 2000ms send-proxy-v2
+
+backend external_http_back
+  server swarm-manager01 {{ manager01.host }}:{{ ext_proxy_bind_http }} check inter 2000ms send-proxy-v2
+  server swarm-manager02 {{ manager02.host }}:{{ ext_proxy_bind_http }} check inter 2000ms send-proxy-v2
+  server swarm-manager03 {{ manager03.host }}:{{ ext_proxy_bind_http }} check inter 2000ms send-proxy-v2
+
+backend external_imap_back
+  server swarm-manager01 {{ manager01.host }}:{{ ext_proxy_bind_imap }} check inter 2000ms send-proxy-v2
+  server swarm-manager02 {{ manager02.host }}:{{ ext_proxy_bind_imap }} check inter 2000ms send-proxy-v2
+  server swarm-manager03 {{ manager03.host }}:{{ ext_proxy_bind_imap }} check inter 2000ms send-proxy-v2
+
+backend external_https_back
+  server swarm-manager01 {{ manager01.host }}:{{ ext_proxy_bind_https }} check inter 2000ms send-proxy-v2
+  server swarm-manager02 {{ manager02.host }}:{{ ext_proxy_bind_https }} check inter 2000ms send-proxy-v2
+  server swarm-manager03 {{ manager03.host }}:{{ ext_proxy_bind_https }} check inter 2000ms send-proxy-v2
+
+backend external_smtps_back
+  server swarm-manager01 {{ manager01.host }}:{{ ext_proxy_bind_smtps }} check inter 2000ms send-proxy-v2
+  server swarm-manager02 {{ manager02.host }}:{{ ext_proxy_bind_smtps }} check inter 2000ms send-proxy-v2
+  server swarm-manager03 {{ manager03.host }}:{{ ext_proxy_bind_smtps }} check inter 2000ms send-proxy-v2
+
+backend external_submission_back
+  server swarm-manager01 {{ manager01.host }}:{{ ext_proxy_bind_submission }} check inter 2000ms send-proxy-v2
+  server swarm-manager02 {{ manager02.host }}:{{ ext_proxy_bind_submission }} check inter 2000ms send-proxy-v2
+  server swarm-manager03 {{ manager03.host }}:{{ ext_proxy_bind_submission }} check inter 2000ms send-proxy-v2
+
+backend external_imaps_back
+  server swarm-manager01 {{ manager01.host }}:{{ ext_proxy_bind_imaps }} check inter 2000ms send-proxy-v2
+  server swarm-manager02 {{ manager02.host }}:{{ ext_proxy_bind_imaps }} check inter 2000ms send-proxy-v2
+  server swarm-manager03 {{ manager03.host }}:{{ ext_proxy_bind_imaps }} check inter 2000ms send-proxy-v2
+
+backend external_sieve_back
+  server swarm-manager01 {{ manager01.host }}:{{ ext_proxy_bind_sieve }} check inter 2000ms send-proxy-v2
+  server swarm-manager02 {{ manager02.host }}:{{ ext_proxy_bind_sieve }} check inter 2000ms send-proxy-v2
+  server swarm-manager03 {{ manager03.host }}:{{ ext_proxy_bind_sieve }} check inter 2000ms send-proxy-v2
+
+{% if virt_host.internal_host is defined %}
+frontend internal_services
+  # IPv4
+  bind {{ virt_host.internal_host }}:22     # ssh
+  bind {{ virt_host.internal_host }}:80     # http
+  bind {{ virt_host.internal_host }}:443    # https
+  bind {{ virt_host.internal_host }}:8080   # http proxy api
+
+  maxconn 4096
+
+  # ssh
+  acl ssh_acl dst_port 22
+  use_backend internal_ssh_back if ssh_acl
+
+  # http
+  acl http_acl dst_port 80
+  use_backend internal_http_back if http_acl
+
+  # https
+  acl https_acl dst_port 443
+  use_backend internal_https_back if https_acl
+
+  # http proxy api
+  acl http_proxy_api_acl dst_port 8080
+  use_backend internal_http_proxy_api_back if http_proxy_api_acl
+
+backend internal_ssh_back
+  server swarm-manager01 {{ manager01.host }}:{{ int_proxy_bind_sshd }} check inter 2000ms
+  server swarm-manager02 {{ manager02.host }}:{{ int_proxy_bind_sshd }} check inter 2000ms
+  server swarm-manager03 {{ manager03.host }}:{{ int_proxy_bind_sshd }} check inter 2000ms
+
+backend internal_http_back
+  server swarm-manager01 {{ manager01.host }}:{{ int_proxy_bind_http }} check inter 2000ms send-proxy-v2
+  server swarm-manager02 {{ manager02.host }}:{{ int_proxy_bind_http }} check inter 2000ms send-proxy-v2
+  server swarm-manager03 {{ manager03.host }}:{{ int_proxy_bind_http }} check inter 2000ms send-proxy-v2
+
+backend internal_https_back
+  server swarm-manager01 {{ manager01.host }}:{{ int_proxy_bind_https }} check inter 2000ms send-proxy-v2
+  server swarm-manager02 {{ manager02.host }}:{{ int_proxy_bind_https }} check inter 2000ms send-proxy-v2
+  server swarm-manager03 {{ manager03.host }}:{{ int_proxy_bind_https }} check inter 2000ms send-proxy-v2
+
+backend internal_http_proxy_api_back
+  server swarm-manager01 {{ manager01.host }}:{{ int_proxy_bind_api }} check inter 2000ms
+  server swarm-manager02 {{ manager02.host }}:{{ int_proxy_bind_api }} check inter 2000ms
+  server swarm-manager03 {{ manager03.host }}:{{ int_proxy_bind_api }} check inter 2000ms
+
+listen stats
+  bind {{ virt_host.internal_host }}:9000
+  mode http
+  stats auth {{ proxy_stats_user }}:{{ proxy_stats_pass }}
+  stats enable
+  stats hide-version
+  stats refresh 30s
+  stats realm Strictly\ Private
+  stats uri /admin?stats
+  stats show-legends
+  option httplog
+{% endif %}
+

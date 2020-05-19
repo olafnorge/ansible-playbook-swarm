@@ -1,0 +1,164 @@
+---
+borg_olafnorge_de_version: 1.0.45
+borg_olafnorge_de_labels:
+  - de.olafnorge.service.0.on_network=int-proxy
+  - de.olafnorge.service.0.domains=borg.example.com
+  - de.olafnorge.service.0.type=http
+  - de.olafnorge.service.0.dst_port=80
+  - de.olafnorge.service.0.allowed_methods=GET,HEAD,POST,PUT,OPTIONS,DELETE
+borg_olafnorge_de_network_definitions:
+  int-proxy:
+    external: true
+  internal:
+borg_olafnorge_de_networks:
+  - int-proxy
+  - "{{ borg_olafnorge_de_network_internal }}"
+borg_olafnorge_de_crons:
+  - interval: '1 0 * * *'
+    user: root
+    command: "mkdir -p /backup/{{ borg_olafnorge_de_name }}-$(date -I) && xtrabackup --backup --user=root --host=database --password=$(cat /run/secrets/borg_olafnorge_de_db_root_password) --datadir=/var/lib/mysql --target-dir=/backup/{{ borg_olafnorge_de_name }}-$(date -I) && find /backup/ ! -name {{ borg_olafnorge_de_name }}-$(date -I) -name '{{ borg_olafnorge_de_name }}-*' -type d -exec rm -rfv {} +"
+borg_olafnorge_de_environment:
+  borg_relocated_repo_access_is_ok: "yes"
+  borg_log_level: verbose
+  horizon_timeout: 3600 # give it one hour
+borg_olafnorge_de_compose:
+  services:
+    borg:
+      secrets:
+        - source: borg_olafnorge_de_app_key
+          uid: '0'
+          gid: '82'
+          mode: 0440
+        - source: borg_olafnorge_de_db_password
+          uid: '0'
+          gid: '82'
+          mode: 0440
+        - source: borg_olafnorge_de_mail_password
+          uid: '0'
+          gid: '82'
+          mode: 0440
+        - source: borg_olafnorge_de_oauth_client_secret
+          uid: '0'
+          gid: '82'
+          mode: 0440
+        - source: borg_olafnorge_de_rollbar_token
+          uid: '0'
+          gid: '82'
+          mode: 0440
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: volume
+          source: cache
+          target: /var/www/html/storage/tmp
+          volume:
+            nocopy: true
+    database:
+      secrets:
+        - source: borg_olafnorge_de_db_password
+          uid: '0'
+          gid: '999'
+          mode: 0440
+        - source: borg_olafnorge_de_db_root_password
+          uid: '0'
+          gid: '999'
+          mode: 0440
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: volume
+          source: database
+          target: /var/lib/mysql
+          volume:
+            nocopy: true
+    redis:
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: volume
+          source: redis
+          target: /data
+          volume:
+            nocopy: true
+    xtrabackup:
+      secrets:
+        - source: borg_olafnorge_de_db_root_password
+          uid: '0'
+          gid: '0'
+          mode: 0400
+      volumes:
+        - type: bind
+          source: /etc/localtime
+          target: /etc/localtime
+          read_only: true
+        - type: bind
+          source: /etc/timezone
+          target: /etc/timezone
+          read_only: true
+        - type: volume
+          source: database
+          target: /var/lib/mysql
+          read_only: true
+          volume:
+            nocopy: true
+        - type: volume
+          source: xtrabackup
+          target: /backup
+          volume:
+            nocopy: true
+  secrets:
+    borg_olafnorge_de_app_key:
+      external: true
+    borg_olafnorge_de_db_password:
+      external: true
+    borg_olafnorge_de_db_root_password:
+      external: true
+    borg_olafnorge_de_mail_password:
+      external: true
+    borg_olafnorge_de_oauth_client_secret:
+      external: true
+    borg_olafnorge_de_rollbar_token:
+      external: true
+  volumes:
+    database:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/borg/database"
+    cache:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/borg/cache"
+    redis:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/borg/redis"
+    xtrabackup:
+      driver: local
+      driver_opts:
+        type: "nfs"
+        o: addr={{ nfs_master | ipaddr('address') }},nolock,soft,rw
+        device: ":/mnt/share/xtrabackup"
